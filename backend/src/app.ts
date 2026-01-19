@@ -40,7 +40,7 @@ export function createApp(): Express {
   app.use(requestLogger);
 
   // Health check endpoint
-  app.get('/health', (req, res) => {
+  app.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
@@ -48,7 +48,7 @@ export function createApp(): Express {
   app.use('/api/tasks', tasksRoutes);
 
   // 404 handler
-  app.use((req, res) => {
+  app.use((_req, res) => {
     res.status(404).json({
       code: 404,
       message: '接口不存在',

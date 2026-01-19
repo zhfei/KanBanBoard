@@ -11,7 +11,7 @@ import { ValidationError } from '../utils/errors';
  * Creates a middleware that validates request data using Zod schema
  */
 export function validate(schema: ZodSchema, target: 'body' | 'query' | 'params' = 'body') {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
     try {
       const data = req[target];
       const validated = schema.parse(data);

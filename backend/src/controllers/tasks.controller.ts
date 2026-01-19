@@ -5,9 +5,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { taskService } from '../services/tasks.service';
 import { CreateTaskPayload, UpdateTaskPayload, GetTasksQuery } from '../validators/tasks.validator';
-import { Logger } from '../utils/logger';
-
-const logger = new Logger('TaskController');
 
 /**
  * API Response wrapper
