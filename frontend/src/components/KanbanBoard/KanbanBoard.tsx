@@ -55,11 +55,11 @@ export function KanbanBoard() {
     setModalState({ isOpen: false, mode: 'create', task: undefined });
   };
 
-  const handleSaveTask = async (title: string, description?: string) => {
+  const handleSaveTask = async (title: string, description?: string, status?: TaskStatus) => {
     if (modalState.mode === 'create') {
       await actions.createTask(title, description);
     } else if (modalState.task) {
-      await actions.updateTask(modalState.task.id, title, description);
+      await actions.updateTask(modalState.task.id, title, description, status);
     }
   };
 

@@ -4,12 +4,19 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
-import type { Task } from '../../types/task';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
+import type { Task, TaskStatus } from '../../types/task';
 
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (title: string, description?: string) => Promise<void>;
+  onSave: (title: string, description?: string, status?: TaskStatus) => Promise<void>;
   task?: Task;
   mode: 'create' | 'edit';
 }
@@ -17,6 +24,7 @@ interface TaskModalProps {
 export function TaskModal({ isOpen, onClose, onSave, task, mode }: TaskModalProps) {
   const [title, setTitle] = useState(task?.title || '');
   const [description, setDescription] = useState(task?.description || '');
+  const [status, setStatus] = useState<TaskStatus>(task?.status || 'Todo');
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<{ title?: string }>({});
 
@@ -25,6 +33,7 @@ export function TaskModal({ isOpen, onClose, onSave, task, mode }: TaskModalProp
     if (isOpen) {
       setTitle(task?.title || '');
       setDescription(task?.description || '');
+      setStatus(task?.status || 'Todo');
       setErrors({});
     }
   }, [isOpen, task]);
@@ -49,7 +58,9 @@ export function TaskModal({ isOpen, onClose, onSave, task, mode }: TaskModalProp
 
     setSaving(true);
     try {
-      await onSave(title.trim(), description.trim() || undefined);
+      // In edit mode, include status if it changed
+      const statusToSave = mode === 'edit' ? status : undefined;
+      await onSave(title.trim(), description.trim() || undefined, statusToSave);
       onClose();
     } catch (error) {
       // Error handling is done in the parent component
@@ -125,6 +136,27 @@ export function TaskModal({ isOpen, onClose, onSave, task, mode }: TaskModalProp
               disabled={saving}
             />
           </div>
+
+          {/* Status (only in edit mode) */}
+          {mode === 'edit' && (
+            <div className="space-y-2">
+              <Label htmlFor="task-status">任务状态</Label>
+              <Select
+                value={status}
+                onValueChange={(value) => setStatus(value as TaskStatus)}
+                disabled={saving}
+              >
+                <SelectTrigger id="task-status">
+                  <SelectValue placeholder="选择任务状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todo">待办</SelectItem>
+                  <SelectItem value="Doing">进行中</SelectItem>
+                  <SelectItem value="Done">已完成</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

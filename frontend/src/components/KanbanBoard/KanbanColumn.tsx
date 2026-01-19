@@ -1,5 +1,5 @@
 import React from 'react';
-import { useDrop } from 'react-dnd';
+import { useDrop, useDrag } from 'react-dnd';
 import { Plus } from 'lucide-react';
 import type { Task, TaskStatus } from '../../types/task';
 import { TaskCard } from './TaskCard';
@@ -124,6 +124,3 @@ function DraggableTaskCard({ task, onEdit, onDelete }: DraggableTaskCardProps) {
     />
   );
 }
-
-// Import useDrag for the draggable wrapper
-import { useDrag } from 'react-dnd';

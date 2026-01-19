@@ -91,7 +91,7 @@ interface TasksContextValue {
   actions: {
     fetchTasks: () => Promise<void>;
     createTask: (title: string, description?: string) => Promise<void>;
-    updateTask: (id: string, title: string, description?: string) => Promise<void>;
+    updateTask: (id: string, title: string, description?: string, status?: TaskStatus) => Promise<void>;
     deleteTask: (id: string) => Promise<void>;
     moveTask: (id: string, newStatus: TaskStatus) => Promise<void>;
   };
@@ -151,10 +151,17 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   /**
    * Update a task
    */
-  const updateTask = async (id: string, title: string, description?: string) => {
+  const updateTask = async (id: string, title: string, description?: string, status?: TaskStatus) => {
     try {
-      logger.info('Updating task', { id });
-      const task = await tasksApi.updateTask(id, { title, description });
+      logger.info('Updating task', { id, status });
+      const payload: { title: string; description?: string; status?: TaskStatus } = { title };
+      if (description !== undefined) {
+        payload.description = description;
+      }
+      if (status !== undefined) {
+        payload.status = status;
+      }
+      const task = await tasksApi.updateTask(id, payload);
       dispatch({ type: 'UPDATE_TASK', payload: task });
       logger.info('Task updated successfully', { id });
       toast.success('任务更新成功');

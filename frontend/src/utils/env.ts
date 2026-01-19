@@ -12,7 +12,7 @@ export function getApiBaseUrl(): string {
   if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL;
   }
-  return 'http://localhost:3001';
+  return 'http://localhost:8080';
 }
 
 /**
