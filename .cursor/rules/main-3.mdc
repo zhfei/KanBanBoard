@@ -1,0 +1,174 @@
+---
+alwaysApply: true
+---
+# Web 前端，后端 API，数据库，Docker的详细流程图
+
+## 0. 图例与约定
+
+- **UI**：浏览器中的 Web 前端
+- **API**：后端 REST 服务
+- **DB**：数据库（默认 PostgreSQL）
+- **Docker**：docker compose 一键启动的运行形态
+
+---
+
+## 1. 总体链路流程图（端到端）
+
+```
+用户
+  │ 访问
+  ▼
+Web 前端（Browser / SPA）
+  │ HTTP(S) JSON
+  ▼
+后端 API（REST）
+  │ SQL
+  ▼
+数据库（DB）
+```
+
+---
+
+## 2. Web 前端流程图
+
+### 2.1 页面初始化
+
+```
+[进入 /kanban]
+  ▼
+[读取 API_BASE_URL]
+  ▼
+[GET /api/tasks]
+  ├─ 成功 -> [按 status 分组] -> [渲染 Todo/Doing/Done]
+  └─ 失败 -> [提示错误] -> [提供重试]
+```
+
+### 2.2 新建任务
+
+```
+[打开新建任务弹窗]
+  ▼
+[前端校验：title 非空、长度限制]
+  ▼
+[POST /api/tasks]
+  ├─ 成功 -> [插入 Todo 列] -> [关闭弹窗]
+  └─ 失败 -> [提示错误] -> [保留表单]
+```
+
+### 2.3 拖拽任务（核心）
+
+```
+[拖拽开始]
+  ▼
+[UI 乐观更新：卡片显示在目标列]
+  ▼
+[PUT /api/tasks/{id} {status: Todo|Doing|Done}]
+  ├─ 成功 -> [保持 UI]
+  └─ 失败 -> [提示错误] -> [重新 GET /api/tasks 全量刷新]
+```
+
+---
+
+## 3. 后端 API 流程图
+
+### 3.1 通用请求处理链
+
+```
+[HTTP Request]
+  ▼
+[Request Logger（requestId、耗时、状态码）]
+  ▼
+[参数解析 + 校验]
+  ├─ 失败 -> [400 + 业务错误码]
+  ▼
+[Controller -> Service -> Repository]
+  ▼
+[统一响应 code/message/data]
+  ▼
+[HTTP Response]
+```
+
+### 3.2 获取任务列表 GET /api/tasks
+
+```
+[解析 query.status（可选）]
+  ▼
+[SELECT * FROM tasks WHERE status=?（可选）]
+  ▼
+[返回任务数组]
+```
+
+### 3.3 更新任务 PUT /api/tasks/{id}（含拖拽）
+
+```
+[校验 path 参数 id]
+  ▼
+[校验 body：title/description/status 类型与长度]
+  ▼
+[若提供 status：校验 ∈ {Todo, Doing, Done}]
+  ▼
+[SELECT tasks WHERE id=?]
+  ├─ 不存在 -> [404]
+  ▼
+[UPDATE tasks SET ... , updated_at=now() WHERE id=?]
+  ▼
+[返回更新后的任务]
+```
+
+---
+
+## 4. 数据库流程图
+
+### 4.1 写入（创建/更新/拖拽）
+
+```
+[INSERT/UPDATE tasks]
+  ▼
+[提交事务（如有）]
+  ▼
+[返回最新数据]
+```
+
+### 4.2 读取（加载看板）
+
+```
+[按 status 查询/排序]
+  ▼
+[返回任务集合]
+```
+
+---
+
+## 5. Docker Compose（从启动到可访问）
+
+### 5.1 启动流程
+
+```
+[docker compose up]
+  ▼
+[启动 db]
+  ▼
+[db healthy]
+  ▼
+[启动 backend（连接 db，执行迁移/初始化）]
+  ▼
+[启动 frontend]
+  ▼
+[对外提供访问]
+```
+
+### 5.2 访问关系（关键）
+
+```
+Browser -> [localhost:3000](http://localhost:3000) -> frontend
+frontend -> http://backend:8080 -> backend
+backend -> db:5432 -> db
+```
+
+---
+
+## 6. 验收对照
+
+- 拖拽后刷新不丢失（状态已落库）。
+- `docker compose up` 一键可访问（前端可打开、可调用 API、可连数据库）。
+- 错误处理、日志、校验、分层结构满足企业项目标准。

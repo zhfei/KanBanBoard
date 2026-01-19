@@ -1,0 +1,274 @@
+---
+alwaysApply: true
+---
+# 整体技术设计文档
+
+## 1. 概述
+
+本项目实现一个**看板任务管理（Kanban Board）**系统，支持类似 Trello 的任务流转与协作。核心体验是任务卡片在 **Todo / Doing / Done** 三列之间拖拽移动，并实现数据可靠同步与持久化。
+
+**交付要求（来自提案）：**
+
+- 技术形态：Web 前端 + 后端 API + 数据库。[[1]](需在代码落地)
+- 强制 Docker 化：根目录必须包含 `docker-compose.yml`，`docker compose up` 必须能一键启动并访问。[[1]](需在代码落地)
+- 企业项目标准：错误处理、日志、校验、接口设计、组件化、通用工具封装。[[1]](需在代码落地)
+
+---
+
+## 2. 总体架构
+
+### 2.1 端到端链路
+
+```
+用户（浏览器）
+  │
+  ▼
+Web 前端（SPA）
+  │ HTTP JSON
+  ▼
+后端 API（REST）
+  │ SQL
+  ▼
+数据库（PostgreSQL）
+```
+
+### 2.2 分层边界（必须遵守）
+
+- **前端分层**
+    - UI（组件层）：渲染与交互事件，不写业务规则
+    - State（状态层）：任务列表、拖拽中间态、乐观更新/回滚策略
+    - API Client（接口层）：统一请求封装、错误映射、超时
+- **后端分层**
+    - Controller（HTTP 层）：路由、参数解析、校验触发、返回统一结构
+    - Service（业务层）：任务创建/更新/删除、状态流转规则、幂等性
+    - Repository（数据层）：SQL/ORM、事务、数据映射
+    - Cross-cutting（横切）：日志、错误码、配置、异常处理中间件
+
+---
+
+## 3. 技术选型（建议默认）
+
+### 3.1 数据库
+
+- 默认：**PostgreSQL**（与流程图口径一致）
+- 如需 MySQL：提供 compose 变体（不影响产品范围）
+
+### 3.2 后端
+
+- Node.js + TypeScript（Express/NestJS 均可）
+- 校验：zod / joi / class-validator（三选一）
+- 数据访问：Prisma/TypeORM 或 SQL + query builder（二选一）
+
+### 3.3 前端
+
+- React + TypeScript
+- 拖拽：dnd-kit
+- 状态管理：Context+Reducer（轻量）或 Zustand（二选一）
+
+---
+
+## 4. 仓库最外层结构（必须与截图一致）
+
+```
+.
+├─ .github/
+│  └─ workflows/
+├─ backend/
+├─ frontend/
+├─ .gitignore
+├─ [README.md](http://README.md)
+└─ docker-compose.yml
+```
+
+---
+
+## 5. 数据模型与数据库设计
+
+### 5.1 概念模型
+
+- Task
+    - id
+    - title
+    - description
+    - status（Todo/Doing/Done）
+    - created_at / updated_at
+
+### 5.2 表结构（建议）
+
+```sql
+CREATE TABLE tasks (
+  id           UUID PRIMARY KEY,
+  title        VARCHAR(200) NOT NULL,
+  description  TEXT NULL,
+  status       VARCHAR(16) NOT NULL,
+  created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_tasks_status ON tasks(status);
+```
+
+### 5.3 约束与一致性
+
+- status 白名单：应用层强校验；数据库层可选加 CHECK 约束
+- updated_at：UPDATE 时更新（应用层或触发器任选其一，但必须一致）
+
+---
+
+## 6. API 设计（可直接开发）
+
+### 6.1 统一响应
+
+- 成功：`{ "code": 0, "message": "ok", "data": ... }`
+- 失败：`{ "code": <业务错误码>, "message": "...", "data": null }`
+
+### 6.2 错误码建议
+
+- 1001：参数校验失败
+- 2001：任务不存在
+- 9000：未知错误
+
+### 6.3 接口清单
+
+#### 6.3.1 获取任务列表
+
+- `GET /api/tasks`
+- Query（可选）：`status=Todo|Doing|Done`
+
+#### 6.3.2 创建任务
+
+- `POST /api/tasks`
+- Body：
+    - title（必填，<=200）
+    - description（可选）
+
+#### 6.3.3 获取单个任务
+
+- `GET /api/tasks/{id}`
+
+#### 6.3.4 更新任务（含拖拽更新 status）
+
+- `PUT /api/tasks/{id}`
+- Body：允许更新 title/description/status
+    - 拖拽场景：只传 `status`
+
+#### 6.3.5 删除任务
+
+- `DELETE /api/tasks/{id}`
+
+---
+
+## 7. 关键流程（对齐流程图）
+
+### 7.1 页面初始化
+
+1. 前端读取 `API_BASE_URL`
+2. 调用 `GET /api/tasks`
+3. 按 status 分组渲染 Todo/Doing/Done
+
+### 7.2 新建任务
+
+1. 前端校验 title
+2. `POST /api/tasks`
+3. 成功后插入 Todo 列
+
+### 7.3 拖拽更新（最关键）
+
+**前端策略（推荐第一版稳妥实现）：**
+
+1. UI 先乐观更新（卡片先落到目标列）
+2. 调用 `PUT /api/tasks/{id}` 更新 status
+3. 成功：保持 UI
+4. 失败：提示错误并 **重新 GET /api/tasks 全量刷新**（最稳）
+
+**后端处理链：**
+
+1. 校验 path 参数 `id`
+2. 校验 body 字段类型与长度
+3. 若提供 status：校验 ∈ {Todo, Doing, Done}
+4. SELECT 任务是否存在，不存在返回 404（业务码 2001）
+5. UPDATE 落库并更新 updated_at
+6. 返回更新后的任务
+
+---
+
+## 8. 工程实现细节（落地级）
+
+### 8.1 前端目录建议（frontend/）
+
+```
+frontend/
+├─ src/
+│  ├─ api/
+│  │  ├─ httpClient.ts
+│  │  └─ tasksApi.ts
+│  ├─ components/
+│  │  ├─ KanbanBoard/
+│  │  │  ├─ KanbanBoard.tsx
+│  │  │  ├─ KanbanColumn.tsx
+│  │  │  └─ TaskCard.tsx
+│  │  └─ TaskModal/
+│  │     └─ TaskModal.tsx
+│  ├─ pages/
+│  │  └─ KanbanPage.tsx
+│  ├─ state/
+│  │  ├─ tasksStore.ts
+│  │  └─ types.ts
+│  └─ utils/
+│     ├─ env.ts
+│     └─ errors.ts
+├─ Dockerfile
+└─ package.json
+```
+
+### 8.2 后端目录建议（backend/）
+
+```
+backend/
+├─ src/
+│  ├─ app.ts
+│  ├─ routes/
+│  │  └─ tasks.routes.ts
+│  ├─ controllers/
+│  │  └─ tasks.controller.ts
+│  ├─ services/
+│  │  └─ tasks.service.ts
+│  ├─ repositories/
+│  │  └─ tasks.repository.ts
+│  ├─ validators/
+│  │  └─ tasks.validator.ts
+│  ├─ middlewares/
+│  │  ├─ requestLogger.ts
+│  │  └─ errorHandler.ts
+│  ├─ config/
+│  │  ├─ env.ts
+│  │  └─ db.ts
+│  └─ utils/
+│     └─ errors.ts
+├─ migrations/
+├─ Dockerfile
+└─ package.json
+```
+
+### 8.3 日志与可观测性
+
+- 每个请求生成/透传 `requestId`
+- request log：method、path、statusCode、latency、requestId
+- business log：task.created / task.updated / task.deleted / task.moved
+
+---
+
+## 9. Docker 设计
+
+Dockerfile 与 docker-compose 的完整可复制方案，已独立维护在：
+
+[Dockerfile，docker-compose详细设计](https://www.notion.so/Dockerfile-docker-compose-2ed20f214f72802cbdf8c5fbd2ec3ea2?pvs=21)
+
+---
+
+## 10. 验收对照（对应提案/产品）
+
+- `docker compose up` 一键启动并可访问前端
+- 前端可调用后端 API，后端可连接数据库
+- 拖拽更新后刷新不丢失（已落库）
+- 代码体现企业项目标准：校验、错误处理、日志、分层与模块化

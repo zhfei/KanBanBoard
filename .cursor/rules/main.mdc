@@ -1,0 +1,20 @@
+---
+name: main
+description: This is a new rule
+---
+
+# 看板任务管理（Kanban Board） 简介
+
+产品：看板任务管理（Kanban Board）
+关键端侧：Web 前端，后端 API，数据库，Docker
+
+
+# 开发规则
+项目的开发过程要验证遵守下面四个rules:
+ **main-0.mdc**,
+ **main-1.mdc**,
+ **main-2.mdc**,
+ **main-3.mdc**
+这4个文档是项目开发的大纲
+
+
