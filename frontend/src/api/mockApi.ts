@@ -155,5 +155,6 @@ export const mockTasksApi = {
 /**
  * Enable mock mode flag
  * Set to true to use mock data instead of real API
+ * Set to false to use real backend API
  */
-export const ENABLE_MOCK = true;
+export const ENABLE_MOCK = false;
