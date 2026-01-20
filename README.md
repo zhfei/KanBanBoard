@@ -1,96 +1,434 @@
-# 🚀 Prompt2Repo 准入考核 (Entrance Challenge)
+# Kanban Board - 看板任务管理系统
 
-## 📌 考核背景
-本项目寻找具备 **"AI Native" (Vibe Coding)** 能力的资深工程师。我们需要你展示如何利用 **Cursor / Trae / Claude Code** 等 AI 工具，快速构建**工程化标准**的应用。
+一个基于 React + Node.js 的现代化看板任务管理系统，支持类似 Trello 的任务拖拽操作。通过 Docker Compose 实现一键部署，前后端完全容器化。
 
-> **核心考核点**：
-> 1. **AI 驾驭能力**：不仅是生成代码，而是生成架构、调试 Bug、优化工程。
-> 2. **Docker 交付标准**：强制容器化交付，拒绝“在我本地能跑”的代码。
-> 3. **全栈审美**：拒绝简陋 UI，需具备商业级交付意识。
+## ✨ 功能特性
+
+- 📋 **任务管理**：完整的任务 CRUD 操作（创建、查看、编辑、删除）
+- 🎯 **拖拽流转**：支持任务在 Todo、Doing、Done 三列之间自由拖拽
+- 🔄 **实时同步**：拖拽操作立即同步到后端数据库，数据持久化
+- 🎨 **现代化 UI**：基于 React + Radix UI 的美观界面设计
+- 🐳 **容器化部署**：Docker Compose 一键启动所有服务
+- 📱 **响应式设计**：适配不同屏幕尺寸
+
+## 🛠️ 技术栈
+
+### 前端
+
+| 技术 | 版本 | 用途 |
+|------|------|------|
+| React | ^18.3.1 | UI 框架 |
+| TypeScript | - | 类型安全 |
+| Vite | 6.3.5 | 构建工具 |
+| React DnD | - | 拖拽功能 |
+| Radix UI | - | UI 组件库 |
+| Tailwind CSS | - | 样式框架 |
+
+### 后端
+
+| 技术 | 版本 | 用途 |
+|------|------|------|
+| Node.js | 20 | 运行时环境 |
+| Express | ^4.21.1 | Web 框架 |
+| TypeScript | ^5.5.4 | 类型安全 |
+| Prisma | ^5.19.1 | ORM 框架 |
+| PostgreSQL | 16 | 关系型数据库 |
+| Zod | ^3.23.8 | 参数校验 |
+
+### 部署
+
+| 技术 | 用途 |
+|------|------|
+| Docker | 容器化 |
+| Docker Compose | 服务编排 |
+| Nginx | 前端静态资源服务 |
+
+## 📁 项目结构
+
+```
+.
+├── frontend/              # 前端应用
+│   ├── src/
+│   │   ├── api/          # API 客户端
+│   │   ├── components/   # React 组件
+│   │   ├── pages/        # 页面组件
+│   │   ├── state/        # 状态管理
+│   │   └── utils/        # 工具函数
+│   ├── Dockerfile        # 前端 Docker 配置
+│   └── package.json
+├── backend/              # 后端 API
+│   ├── src/
+│   │   ├── controllers/  # 控制器层
+│   │   ├── services/     # 业务逻辑层
+│   │   ├── repositories/ # 数据访问层
+│   │   ├── routes/       # 路由定义
+│   │   ├── validators/   # 参数校验
+│   │   ├── middlewares/  # 中间件
+│   │   └── config/       # 配置文件
+│   ├── migrations/       # 数据库迁移脚本
+│   ├── prisma/           # Prisma schema
+│   ├── Dockerfile        # 后端 Docker 配置
+│   └── package.json
+├── docker-compose.yml    # Docker Compose 配置
+├── API接口文档.md        # API 接口文档
+└── 启动说明.md           # 详细启动说明
+
+```
+
+## 🚀 快速开始
+
+### 前置要求
+
+- [Docker](https://www.docker.com/get-started) (>= 20.10)
+- [Docker Compose](https://docs.docker.com/compose/install/) (>= 2.0)
+
+> **注意**：确保 Docker 和 Docker Compose 已正确安装并运行。
+
+### 一键启动
+
+1. **克隆项目**
+
+```bash
+git clone https://github.com/zhfei/KanBanBoard.git
+cd KanBanBoard
+```
+
+2. **启动所有服务**
+
+```bash
+docker compose up
+```
+
+3. **访问应用**
+
+- 前端界面：http://localhost:3000
+- 后端 API：http://localhost:8080
+- 数据库：localhost:5432
+
+### 验证启动成功
+
+1. **检查服务状态**
+
+```bash
+docker compose ps
+```
+
+应该看到以下服务都在运行：
+- `kanban-db` (PostgreSQL 数据库)
+- `kanban-backend` (后端 API)
+- `kanban-frontend` (前端服务)
+
+> **注意**：`kanban-migrate` 服务执行完数据库迁移后会自动退出，这是正常的。
+
+2. **查看日志**
+
+```bash
+# 查看所有服务日志
+docker compose logs -f
+
+# 查看特定服务日志
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+
+3. **测试 API**
+
+```bash
+# 健康检查
+curl http://localhost:8080/health
+
+# 获取任务列表
+curl http://localhost:8080/api/tasks
+```
+
+### 停止服务
+
+```bash
+# 停止所有服务（保留数据）
+docker compose stop
+
+# 停止并删除容器（保留数据卷）
+docker compose down
+
+# 停止并删除容器和数据卷（完全清理）
+docker compose down -v
+```
+
+## 📖 详细启动说明
+
+### 服务启动顺序
+
+Docker Compose 会按以下顺序自动启动服务：
+
+1. **kanban-db** - PostgreSQL 数据库服务
+   - 等待数据库健康检查通过
+   - 端口：5432
+
+2. **kanban-migrate** - 数据库迁移服务
+   - 等待数据库就绪后执行迁移脚本
+   - 执行完成后自动退出（`restart: "no"`）
+   - 迁移脚本：`backend/migrations/init.sql`
+
+3. **kanban-backend** - 后端 API 服务
+   - 等待迁移服务成功完成后启动
+   - 提供 REST API 接口
+   - 端口：8080
+
+4. **kanban-frontend** - 前端 Web 服务
+   - 等待后端服务启动后启动
+   - 提供 Web 界面
+   - 端口：3000 (映射到容器内的 80)
+
+### 端口映射
+
+| 服务 | 容器端口 | 主机端口 | 说明 |
+|------|---------|---------|------|
+| 前端 | 80 | 3000 | Web 界面 |
+| 后端 | 8080 | 8080 | API 接口 |
+| 数据库 | 5432 | 5432 | PostgreSQL |
+
+### 环境变量
+
+主要环境变量配置（在 `docker-compose.yml` 中）：
+
+**后端环境变量：**
+- `PORT`: 8080
+- `DB_HOST`: db
+- `DB_PORT`: 5432
+- `DB_USER`: kanban
+- `DB_PASSWORD`: kanban
+- `DB_NAME`: kanban
+- `CORS_ORIGIN`: http://localhost:3000
+
+**前端环境变量：**
+- `VITE_API_BASE_URL`: http://localhost:8080
+
+### 常见问题
+
+#### 1. Docker 镜像拉取超时
+
+**问题**：遇到 `failed to resolve reference` 或 `context deadline exceeded` 错误
+
+**解决方案**：
+
+配置 Docker 镜像加速器：
+
+**macOS / Windows (Docker Desktop):**
+1. 打开 Docker Desktop
+2. 进入 Settings → Docker Engine
+3. 添加以下配置：
+
+```json
+{
+  "registry-mirrors": [
+    "https://docker.mirrors.ustc.edu.cn",
+    "https://hub-mirror.c.163.com",
+    "https://mirror.baidubce.com"
+  ]
+}
+```
+
+4. 点击 "Apply & Restart"
+
+#### 2. 端口已被占用
+
+**问题**：端口 3000、8080 或 5432 已被占用
+
+**解决方案**：
+
+```bash
+# 查找占用端口的进程
+# macOS/Linux
+lsof -i :3000
+lsof -i :8080
+lsof -i :5432
+
+# Windows
+netstat -ano | findstr :3000
+```
+
+修改 `docker-compose.yml` 中的端口映射，或停止占用端口的服务。
+
+#### 3. 迁移服务失败
+
+**问题**：`kanban-migrate` 服务执行失败
+
+**解决方案**：
+
+```bash
+# 查看迁移日志
+docker compose logs migrate
+
+# 手动执行迁移（如果需要）
+docker compose exec db psql -U kanban -d kanban -f /migrations/init.sql
+```
+
+更多详细的问题排查，请参考 [启动说明.md](启动说明.md)。
+
+## 💡 使用说明
+
+### 基本操作
+
+1. **创建任务**
+   - 点击右上角的"新建任务"按钮
+   - 填写任务标题（必填）和描述（可选）
+   - 点击"保存"，任务会自动添加到 Todo 列
+
+2. **查看任务详情**
+   - 点击任务卡片查看详情
+   - 在弹窗中可以查看完整的任务信息
+
+3. **编辑任务**
+   - 点击任务卡片打开详情弹窗
+   - 修改标题、描述或状态
+   - 点击"保存"保存更改
+
+4. **拖拽任务**
+   - 按住任务卡片
+   - 拖拽到目标列（Todo/Doing/Done）
+   - 释放鼠标，任务会自动保存到新状态
+
+5. **删除任务**
+   - 在任务详情弹窗中点击"删除"按钮
+   - 确认删除操作
+
+## 📚 API 文档
+
+完整的 API 接口文档请参考：[API接口文档.md](API接口文档.md)
+
+### 主要接口
+
+- `GET /health` - 健康检查
+- `GET /api/tasks` - 获取任务列表（支持按状态过滤）
+- `GET /api/tasks/:id` - 获取单个任务
+- `POST /api/tasks` - 创建任务
+- `PUT /api/tasks/:id` - 更新任务
+- `DELETE /api/tasks/:id` - 删除任务
+
+### 统一响应格式
+
+```json
+{
+  "code": 0,        // 0 表示成功，其他值表示失败
+  "message": "ok",
+  "data": {}        // 响应数据
+}
+```
+
+## 🛠️ 开发指南
+
+### 本地开发环境设置
+
+#### 前端开发
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+前端开发服务器将在 http://localhost:5173 启动。
+
+#### 后端开发
+
+1. **安装依赖**
+
+```bash
+cd backend
+npm install
+```
+
+2. **配置环境变量**
+
+创建 `.env` 文件：
+
+```env
+PORT=8080
+NODE_ENV=development
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=kanban
+DB_PASSWORD=kanban
+DB_NAME=kanban
+DATABASE_URL=postgresql://kanban:kanban@localhost:5432/kanban?schema=public
+CORS_ORIGIN=http://localhost:5173
+```
+
+3. **启动数据库**
+
+```bash
+# 使用 Docker 启动数据库
+docker run -d \
+  --name kanban-db \
+  -e POSTGRES_DB=kanban \
+  -e POSTGRES_USER=kanban \
+  -e POSTGRES_PASSWORD=kanban \
+  -p 5432:5432 \
+  postgres:16-alpine
+```
+
+4. **执行数据库迁移**
+
+```bash
+# 运行迁移脚本
+docker exec -i kanban-db psql -U kanban -d kanban < backend/migrations/init.sql
+```
+
+或者使用 Prisma：
+
+```bash
+npx prisma generate
+npx prisma migrate dev
+```
+
+5. **启动开发服务器**
+
+```bash
+npm run dev
+```
+
+后端 API 将在 http://localhost:8080 启动。
+
+### 代码结构说明
+
+#### 后端架构
+
+采用分层架构设计：
+
+- **Controller 层**：处理 HTTP 请求和响应
+- **Service 层**：业务逻辑处理
+- **Repository 层**：数据访问操作
+- **Middleware**：请求日志、错误处理、参数校验
+
+#### 前端架构
+
+- **Components**：可复用的 UI 组件
+- **Pages**：页面组件
+- **State**：使用 React Context + Reducer 进行状态管理
+- **API**：统一的 API 客户端封装
+
+### 代码规范
+
+- TypeScript 严格模式
+- ESLint + Prettier（建议）
+- 遵循 RESTful API 设计规范
+- 统一错误处理和日志记录
+
+## 📝 许可证
+
+本项目采用 ISC 许可证。
+
+## 🔗 相关链接
+
+- [项目仓库](https://github.com/zhfei/KanBanBoard)
+- [详细启动说明](启动说明.md)
+- [API 接口文档](API接口文档.md)
+- [技术文档](技术文档/)
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
 
 ---
 
-## 🎯 题目菜单 (任选其一)
-
-请根据你的技术栈，从以下 5 个题目中**任选 1 个**完成。
-
-### A 纯前端：动态主题仪表盘 (SaaS Dashboard)
-* **目标**：构建一个销售数据看板，支持 Light/Dark 主题切换。
-* **技术**：React/Vue + Echarts/Recharts + **Tailwind/AntD (必选)**。
-* **交付**：将前端静态资源或服务容器化，实现一键启动。
-
-### B 纯后端：短链接生成服务 (URL Shortener)
-* **目标**：实现长链接转短链接的 REST API (POST/GET)，含重定向逻辑。
-* **技术**：Python/Go/Java/Node + Redis/SQLite。
-* **交付**：API 服务与数据库均需 Docker 化。
-
-### C 全栈：看板任务管理 (Kanban Board) —— ⭐ 推荐
-* **目标**：实现类似 Trello 的任务拖拽 (Todo/Doing/Done) 及数据同步。
-* **技术**：Web 前端 + 后端 API + 数据库。
-* **交付**：前后端及数据库必须通过 `docker compose` 一键联调。
-
-### D 跨平台/小程序：咖啡点单 (Coffee Order App)
-* **目标**：模拟点单流程（商品列表、规格选择、购物车）。
-* **技术**：Uni-app / Taro / Flutter / 微信原生。
-* **交付**：**客户端代码本地运行** + **后端 API/DB 必须 Docker 化**。
-
-### E 原生移动端：健身计时器 (Fitness Timer)
-* **目标**：HIIT 倒计时工具，支持后台运行和声音提示。
-* **技术**：Swift / Kotlin / React Native。
-* **交付**：**App 代码本地运行** + **后端 API/DB 必须 Docker 化**。
-
----
-
-## 📦 统一交付标准 (Unified Delivery Standard)
-
-本项目强制要求 **Docker 化交付**。请根据你选择的题目类型，遵守以下目录结构和规范：
-
-### 1. 针对 Web / 全栈 / 纯后端 (Type A, B, C)
-你的仓库必须包含完整的前后端容器配置。
-* **结构示例**：
-  ```text
-  ├── frontend/ (含 Dockerfile)
-  ├── backend/  (含 Dockerfile)
-  └── docker-compose.yml  <-- 必须包含，负责启动所有服务
-### 验收标准
-阅卷官执行 `docker compose up` 后，浏览器打开 `localhost:xxxx` 即可正常使用。
-
-### 2. 针对 移动端/小程序
-我们理解 App 无法在容器内运行，因此采取
-**“后端装箱，前端裸奔”**的策略。
-
-* **结构示例**：
-  ```text
-  ├── client/             <-- 放置 App/小程序源码 (无需 Docker)
-  ├── backend/            <-- 放置后端 API 源码 (必须 Docker)
-  └── docker-compose.yml  <-- 仅负责启动 backend 和 db
-  ### 验收标准
-* **GitHub Actions** 必须能成功构建 Backend 镜像。
-* **必须提供录屏**：展示 App 在模拟器/真机上运行，并成功连接 Docker 后端的演示。
-
-> ⚠️ **网络连接提示 (Crucial Tip)**：
-> 在模拟器中访问 Docker 后端时，**不能使用 `localhost`**：
-> * **Android 模拟器**：请尝试 `10.0.2.2:端口`
-> * **真机调试**：请使用电脑的局域网 IP (如 `192.168.1.x`)
-> * *请在代码中预留 Base URL 配置项。*
-
----
-
-## 🚨 验收红线 (Red Lines)
-**出现以下情况将直接淘汰，不予人工审核：**
-
-* ❌ **CI 构建失败**：GitHub Actions 页面显示红色 ❌ (Build Failed)。
-* ❌ **无 Docker 配置**：根目录找不到有效 `docker-compose.yml`。
-* ❌ **UI 审美缺失**：界面排版混乱、无间距、使用浏览器默认样式。
-* ❌ **缺少演示视频**：移动端/小程序未提供真机运行录屏。
-
----
-
-## 🚀 操作流程 (How to Start)
-
-1.  **领取考卷**：点击本页面右上角绿色按钮 **[Use this template]** -> **Create a new repository**。
-    * *注意：请将你的仓库设为 **Public**，否则 Actions 可能无法运行。*
-2.  **AI 开发**：使用 Cursor/Antigravity 等工具完成代码。
-3.  **机器自测**：Push 代码后，点击仓库顶部的 **[Actions]** 标签，确保显示 ✅ (Green)。
-4.  **提交作业**：
-    * 请将 **GitHub 仓库链接** + **Actions 绿灯截图** + **演示视频** 提交给招聘方。
+**注意**：本 README 描述了项目的使用和开发方法。如果您是作为考核项目查看，原始考核要求请参考项目历史提交记录。
